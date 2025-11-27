@@ -1,2 +1,2 @@
 # hypergraph_rumor_propagation
-Simulates the rumor propagation model on hypergraphs.
+This is the implementation of a Gillespie-type simulation for the rumor propagation model on hypergraphs.
