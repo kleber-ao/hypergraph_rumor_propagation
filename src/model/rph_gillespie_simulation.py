@@ -10,6 +10,7 @@ def rph_gillespie_simulation(incidence_matrix, lambda_contagion_rate, alpha_anni
         - alpha_annihilation_rate: float for the rate of annihilation
         - contagion_threshold: float between 0 and 1 for how many nodes are necessary to activate a hyperedge contagion process
         - annihilation_threshold: float between 0 and 1 for how many hyperedges are necessary to activate a node annihilation process
+        - initial_infection_size: integer for how many hypergraphs are randomly activated at the beginning of the simulation
         - seed: integer for the random number generator seed
         - rng_batchsize: how many random numbers are generated at each batch. Trade-off between speed and memory
     Outputs
@@ -25,7 +26,7 @@ def rph_gillespie_simulation(incidence_matrix, lambda_contagion_rate, alpha_anni
     edges_incident_to, nodes_belonging_to = store_incidence_matrix_into_two_dicts(incidence_matrix)
 
     # thresholding
-        # there are two threshold rules:
+        # there are two threshold rule options:
         # 1st: if theta is in (0,1), threshold counts excess from theta*hyperedge_size or from theta*degree;
         # 2nd: if theta is a natural number, threshold counts excess from theta regardless of hyperedge size or degree;
     alternate_thresholding_for_contagion = False
@@ -43,16 +44,16 @@ def rph_gillespie_simulation(incidence_matrix, lambda_contagion_rate, alpha_anni
 
     # control variables
 
-    # the states of nodes is controlled through an array with integers, whose positions are:
+    # the states of nodes is controlled through an array of integers where each position can only be:
     #   0: susceptible
     #   1: spreader
     #   2: stifler
-    node_states = np.zeros(N_network_size, dtype=np.int64)
+    node_states = np.zeros(N_network_size, dtype=np.int32)
 
     # it is also useful to keep track of whether hyperedges have activated or not
     #   0: did not activate yet
     #   1: has activated at some point
-    hyperedge_has_activated = np.zeros(M_no_of_hyperedges, dtype=np.int64)
+    hyperedge_has_activated = np.zeros(M_no_of_hyperedges, dtype=np.int32)
 
     contagion_processes = set() # set with hyperedge ids
     annihilation_processes = set() # set with node ids
@@ -63,6 +64,7 @@ def rph_gillespie_simulation(incidence_matrix, lambda_contagion_rate, alpha_anni
     t_current_time = 0
     event_times.append(t_current_time)
 
+    # trigger the initial infection
     for i in range(initial_infection_size):
         infected_hyperedge = np.int32(np.round(rng.get()*(M_no_of_hyperedges-1)))
 
@@ -115,6 +117,7 @@ def rph_gillespie_simulation(incidence_matrix, lambda_contagion_rate, alpha_anni
     Y.append(len(node_states[node_states==1])/N_network_size)
     X.append(len(node_states[node_states==0])/N_network_size)
 
+    # initial rates for the Gillespie simulation
     total_contagion_rate = lambda_contagion_rate*(len(contagion_processes))
     total_annihilation_rate = alpha_annihilation_rate*len(annihilation_processes)
     total_rate = total_contagion_rate + total_annihilation_rate
